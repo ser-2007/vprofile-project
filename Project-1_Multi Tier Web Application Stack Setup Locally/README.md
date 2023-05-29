@@ -12,13 +12,16 @@
   * IDE (SublimeText, VSCode, etc)
 
 ## Step1: VM Setup
+- First we create a repository in our github account
+  after that
+- Clone the repository to your local
 
-- First clone the repository
-```sh
-git clone https://github.com/rumeysakdogan/vprofile-project.git
+git clone https://github.com/ser-2007/vprofile-project.git
 ```
 
 - We need to go to directory that our Vagrantfile exists. Before we run our VBoxes using `vagrant`, we need to install below plugin.
+
+cd ../Project-1_Multi Tier Web Application Stack Setup Locally/vagrant
 ```sh
 vagrant plugin install vagrant-hostmanager
 ```
@@ -30,7 +33,7 @@ vagrant up
 PS: Bringing VMs can take long time sometimes. If VM setup stops in the middle, run `vagrant up` command again.
 
 - We can check our VMs from `Oracle VM VirtualBox Manager`.
-![](images/VMs-are-running-in-VirtualBox.png)
+![](images/VMs-running-in-VirtualBox.png)
 
 - Next we will validate our VMs one by one with command `vagrant ssh <name_of_VM_given_in_Vagrantfile>`
 ```sh
@@ -41,7 +44,7 @@ vagrant ssh web01
 ```sh
 cat /etc/hosts
 ```
-![](images/connected-web01-via-ssh.png)
+![](images/connect-web01-via-ssh.png)
 - Now we will try to ping `app01` from `web01` vbox.
 ```sh
 ping app01
@@ -132,9 +135,13 @@ systemctl status mariadb
 ```
 
 - RUN mysql secure installation script.
-```sh
+  
+
+
 mysql_secure_installation
-```
+
+
+
 
 - NOTE: Set db root password, we will be using `admin123` as password
 ```
@@ -177,11 +184,16 @@ exit
 ![](images/connected-to-mariadb.png)
 - Next we will clone source code to database vm. And change directory to `src/main/resources/` to get the `sql queries.
 ```
-git clone https://github.com/rumeysakdogan/vprofile-project.git
+git clone https://github.com/ser-2007/vprofile-project.git
+
+cd Project-1_Multi\ Tier\ Web\ Application\ Stack\ Setup\ Locally/
+
+
 cd vprofile-project/src/main/resources/
 ```
 - First we will run below queries before initializing our database.
-```sh
+
+
 mysql -u root -p"$DATABASE_PASS" -e "create database accounts"
 mysql -u root -p"$DATABASE_PASS" -e "grant all privileges on accounts.* TO 'admin'@'app01' identified by 'admin123' "
 cd ../../..
@@ -210,7 +222,7 @@ logout
 - Lets login to memcached server first, and switch to root user.
 ```sh
 vagrant ssh mc01
-sudo su -
+sudo su -i
 ```
 
 - Similar to MySQL provisioning, we will start with updating OS with latest patches and download epel repository.
@@ -254,20 +266,46 @@ sudo su -
 - We will start with updating OS with latest patches and download epel repository.
 ```sh
 yum update -y
+
 yum install epel-release -y
 ```
 
 - Before installing `RabbitMQ`, we will install some dependecies first.
 ```sh
 yum install wget -y
+
 cd /tmp/
+
 wget http://packages.erlang-solutions.com/erlang-solutions-2.0-1.noarch.rpm
 sudo rpm -Uvh erlang-solutions-2.0-1.noarch.rpm
+sudo yum -y install erlang socat
+
+
 ``` 
+**** PROBLEMS OCCUR AFTER THAT WE USE THESE
+
+Logout and execute steps mentioned below to automatically set rmq01
+
+vagrant destroy rmq01
+
+vagrant up rmq01
+
+vagrant ssh rmq01
+
+sudo -i
+
+wget https://raw.githubusercontent.com/devopshydclub/vprofile-project/local-setup/vagrant/Automated_provisioning/rabbitmq.sh
+
+/bin/bash rabbitmq.sh
+
+
+
+****
 
 - Now we can install RabbitMQ server. With below command, we will install the script and pipe with shell to execute the script.
 ```sh
 curl -s https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.rpm.sh | sudo bash
+# Now install the RabbitMQ Server
 sudo yum install rabbitmq-server -y
 ```
 
@@ -281,7 +319,7 @@ systemctl status rabbitmq-server
 - Lastly we need to do below config  for RabbitMQ. We will create a `test` user with password `test`. Then we will create user_tag for `test` user as `administrator`. Once we have done with these config changes, we will restart our rabbitmq service
 ```sh
 cd ~
-echo "[{rabbit, [{loopback_users, []}]}]." > /etc/rabbitmq/rabbitmq.config
+sudo sh -c 'echo "[{rabbit, [{loopback_users, []}]}]." > /etc/rabbitmq/rabbitmq.config'
 rabbitmqctl add_user test test
 rabbitmqctl set_user_tags test administrator
 systemctl restart rabbitmq-server
@@ -316,7 +354,10 @@ yum install git maven wget -y
 - Now we can download Tomcat. First switch to `/tmp/` directory.
 ```sh
 cd /tmp
-wget https://archive.apache.org/dist/tomcat/tomcat-8/v8.5.37/bin/apache-tomcat-8.5.37.tar.
+wget https://archive.apache.org/dist/tomcat/tomcat-8/v8.5.37/bin/apache-tomcat-8.5.37.tar.gz
+
+wget https://archive.apache.org/dist/tomcat/tomcat-8/v8.5.37/bin/apache-tomcat-8.5.37.tar.gz
+
 tar xzvf apache-tomcat-8.5.37.tar.gz
 ```
 
@@ -324,6 +365,9 @@ tar xzvf apache-tomcat-8.5.37.tar.gz
 ```sh
 useradd --home-dir /usr/local/tomcat8 --shell /sbin/nologin tomcat
 ```
+
+# id tomcat
+uid=1001(tomcat) gid=1001(tomcat) groups=1001(tomcat)
 
 - We will copy our data to `/usr/local/tomcat8` directory which is the home-directory for `tomcat` user.
 ```sh
@@ -380,7 +424,7 @@ systemctl status tomcat
 
 - We are still in `/tmp` directory, we will clone our source code here.
 ```sh
-git clone https://github.com/rumeysakdogan/vprofile-project.git
+git clone https://github.com/ser-2007/vprofile-project.git
 ls
 cd vprofile-project/
 ```
@@ -413,6 +457,8 @@ rabbitmq.port=5672
 rabbitmq.username=test
 rabbitmq.password=test
 ```
+* 
+mvn install
 
 - Run `mvn install` command which will create our artifact. Our artifact will be created `/tmp/vprofile-project/target/vprofile-v2.war`
 ```sh
@@ -438,6 +484,9 @@ ls /usr/local/tomcat8/webapps/
 - By the time, our application is coming up we can provision our Nginx server.
 
 ### Provisioning Nginx 
+
+
+vagrant ssh web01
 
 - Our Nginx server is Ubuntu, despite our servers are RedHat. To update OS with latest patches run below command:
 ```sh
